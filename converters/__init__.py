@@ -44,3 +44,8 @@ VALID_TARGETS = {
 }
 
 HANDLERS = {}
+
+from . import images, spreadsheet  # noqa: E402
+
+HANDLERS.update(images.HANDLERS)
+HANDLERS.update(spreadsheet.HANDLERS)
