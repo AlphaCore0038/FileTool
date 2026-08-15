@@ -96,7 +96,7 @@ class Toaster:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Document Toolbox")
+        self.title("FileTool")
         self.geometry("880x580")
         self.minsize(780, 520)
         self.configure(bg=BG)
@@ -125,7 +125,7 @@ class App(tk.Tk):
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
 
-        tk.Label(sidebar, text="TOOLBOX", bg=SIDEBAR, fg=MUTED, font=("Segoe UI", 9, "bold")).pack(pady=(18, 10))
+        tk.Label(sidebar, text="FILETOOL", bg=SIDEBAR, fg=MUTED, font=("Segoe UI", 9, "bold")).pack(pady=(18, 10))
 
         self.side_buttons = {}
         for tool, label in (("convert", "Convert"), ("merge", "Merge"), ("split", "Split"), ("compress", "Compress")):
