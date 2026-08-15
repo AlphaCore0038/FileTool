@@ -31,13 +31,13 @@ def get_output_dir(source_path):
 
 def page_image_paths(source_path, target_fmt, n_pages):
     """Return the list of output paths for a multi-page image conversion."""
-    out_dir = get_output_dir(source_path)
-    ext = FORMAT_TO_EXT[target_fmt]
-    base = Path(source_path).stem
-    return [out_dir / f"{base}_page{i + 1}{ext}" for i in range(n_pages)]
+    return [
+        resolve_output_path(source_path, target_fmt, suffix=f"_page{i + 1}")
+        for i in range(n_pages)
+    ]
 
 
-def resolve_output_path(source_path, target_fmt, on_conflict=None):
+def resolve_output_path(source_path, target_fmt, on_conflict=None, suffix=""):
     """Build an output path inside the output/ folder.
 
     on_conflict(path) must return one of:
@@ -47,7 +47,7 @@ def resolve_output_path(source_path, target_fmt, on_conflict=None):
     If on_conflict is None, conflicts are silently renamed.
     """
     out_dir = get_output_dir(source_path)
-    base = Path(source_path).stem
+    base = Path(source_path).stem + suffix
     ext = FORMAT_TO_EXT[target_fmt]
     candidate = out_dir / f"{base}{ext}"
     counter = 1
