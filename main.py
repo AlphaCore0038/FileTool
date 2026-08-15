@@ -18,8 +18,6 @@ ACCENT_HOVER = "#1177bb"
 TEXT = "#e8e8e8"
 MUTED = "#9d9d9d"
 BORDER = "#3f3f46"
-OK = "#4ec9b0"
-WARN = "#d7ba7d"
 
 FONT = ("Segoe UI", 10)
 FONT_BOLD = ("Segoe UI", 10, "bold")
@@ -61,7 +59,6 @@ class App(tk.Tk):
 
         self._build_sidebar()
         self._build_panels()
-        self._build_statusbar()
 
         self._show("convert")
 
@@ -253,11 +250,6 @@ class App(tk.Tk):
 
         return panel
 
-    def _build_statusbar(self):
-        self.status_var = tk.StringVar(value="ready")
-        bar = tk.Label(self, textvariable=self.status_var, bg=ACCENT, fg=TEXT, font=("Segoe UI", 9), anchor="w", padx=10, pady=4)
-        bar.pack(side="bottom", fill="x")
-
     def _show(self, tool):
         for name, btn in self.side_buttons.items():
             btn.configure(bg=ACCENT if name == tool else BUTTON)
@@ -266,10 +258,6 @@ class App(tk.Tk):
                 panel.pack(fill="both", expand=True)
             else:
                 panel.pack_forget()
-        self._status(f"ready · {tool.capitalize()}")
-
-    def _status(self, text, color=None):
-        self.status_var.set(text)
 
     def _busy(self, on):
         self.config(cursor="watch" if on else "")
@@ -297,7 +285,6 @@ class App(tk.Tk):
         self.from_var.set(fmt)
         self.to_combo["values"] = VALID_TARGETS[fmt]
         self.to_var.set(VALID_TARGETS[fmt][0])
-        self._status(f"{Path(path).name} detected as {fmt}")
 
     def _convert(self):
         src = self.selected
@@ -318,12 +305,10 @@ class App(tk.Tk):
                     paths = [out]
             out_dir = get_output_dir(src)
             self._set_output(out_dir)
-            self._status(f"done: {len(paths)} file(s) in {out_dir}", OK)
         except CancelledError:
-            self._status("cancelled")
+            pass
         except Exception as e:
             messagebox.showerror("Conversion failed", str(e))
-            self._status("failed")
         finally:
             self._busy(False)
 
@@ -369,12 +354,10 @@ class App(tk.Tk):
             out = self._merge_output_name(self.merge_files[0])
             merge_pdfs(merged_parts, out)
             self._set_output(out.parent)
-            self._status(f"merged {len(merged_parts)} file(s) into {out}", OK)
         except CancelledError:
-            self._status("cancelled")
+            pass
         except Exception as e:
             messagebox.showerror("Merge failed", str(e))
-            self._status("failed")
         finally:
             self._busy(False)
 
@@ -401,7 +384,6 @@ class App(tk.Tk):
             messagebox.showerror("Split", "Only PDF files can be split.")
             return
         self.split_file = path
-        self._status(f"PDF selected: {Path(path).name}")
 
     def _split_go(self):
         if not self.split_file:
@@ -424,12 +406,10 @@ class App(tk.Tk):
                     raise ValueError(f"Bad range format: {e}")
                 paths = split_pdf_ranges(self.split_file, ranges)
             self._set_output(get_output_dir(self.split_file))
-            self._status(f"split into {len(paths)} file(s)", OK)
         except ValueError as e:
             messagebox.showerror("Split", str(e))
         except Exception as e:
             messagebox.showerror("Split failed", str(e))
-            self._status("failed")
         finally:
             self._busy(False)
 
@@ -458,7 +438,6 @@ class App(tk.Tk):
             messagebox.showerror("Compress", "Only PDFs and images can be compressed.")
             return
         self.compress_file = path
-        self._status(f"{Path(path).name} ready to compress")
 
     def _compress_go(self):
         if not self.compress_file:
@@ -475,12 +454,10 @@ class App(tk.Tk):
                 out = resolve_output_path(self.compress_file, "JPG", on_conflict=self._ask_conflict)
                 compress_image(self.compress_file, out, quality=quality)
             self._set_output(out.parent)
-            self._status(f"compressed at quality {quality} → {out}", OK)
         except CancelledError:
-            self._status("cancelled")
+            pass
         except Exception as e:
             messagebox.showerror("Compress failed", str(e))
-            self._status("failed")
         finally:
             self._busy(False)
 
