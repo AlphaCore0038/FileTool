@@ -6,7 +6,6 @@ A simple Python GUI application for working with files.
 
 I started this project because I felt a simple desktop tool for these operations could be useful, and it also gave me a chance to build something practical while learning and experimenting with Python.
 
-> 🚧 FileTool is currently under active development.
 
 ## Features
 
