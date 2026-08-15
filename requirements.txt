@@ -1,0 +1,10 @@
+PyMuPDF
+Pillow
+python-docx
+python-pptx
+openpyxl
+markdown
+xhtml2pdf
+mammoth
+html2text
+htmldocx

@@ -1,7 +1,7 @@
 from html import escape
 from pathlib import Path
 
-from .helpers import html_to_docx, html_to_pdf
+from .helpers import html_to_docx, html_to_pdf, page_html
 
 
 def _read_text(path):
@@ -10,15 +10,6 @@ def _read_text(path):
         return data.decode("utf-8-sig")
     except UnicodeDecodeError:
         return data.decode("cp1252", errors="replace")
-
-
-def _page(body):
-    return (
-        "<!DOCTYPE html>\n<html><head><meta charset='utf-8'><title>Document</title>"
-        "<style>body{font-family:Georgia,serif;font-size:12pt;margin:2cm}"
-        "pre{font-family:Consolas,monospace;white-space:pre-wrap}</style></head>"
-        f"<body>{body}</body></html>\n"
-    )
 
 
 def _html_to_txt(html):
@@ -41,7 +32,7 @@ def _html_to_md(html):
 
 def _txt_to_html_body(text):
     body = "".join(f"<p>{escape(line)}</p>" for line in text.splitlines()) or "<p></p>"
-    return _page(body)
+    return page_html(body)
 
 
 def txt_to_html(src, out):
@@ -74,7 +65,7 @@ def _md_to_html(text):
 
 def md_to_html(src, out):
     with open(out, "w", encoding="utf-8") as f:
-        f.write(_page(_md_to_html(_read_text(src))))
+        f.write(page_html(_md_to_html(_read_text(src))))
 
 
 def md_to_txt(src, out):
@@ -83,11 +74,11 @@ def md_to_txt(src, out):
 
 
 def md_to_docx(src, out):
-    html_to_docx(_page(_md_to_html(_read_text(src))), out)
+    html_to_docx(page_html(_md_to_html(_read_text(src))), out)
 
 
 def md_to_pdf(src, out):
-    html_to_pdf(_page(_md_to_html(_read_text(src))), out)
+    html_to_pdf(page_html(_md_to_html(_read_text(src))), out)
 
 
 def html_to_pdf_handler(src, out):

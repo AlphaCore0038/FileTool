@@ -65,6 +65,16 @@ def resolve_output_path(source_path, target_fmt, on_conflict=None, suffix=""):
     return candidate
 
 
+def page_html(body):
+    """Wrap an HTML fragment into a full printable HTML document."""
+    return (
+        "<!DOCTYPE html>\n<html><head><meta charset='utf-8'><title>Document</title>"
+        "<style>body{font-family:Georgia,serif;font-size:12pt;margin:2cm}"
+        "pre{font-family:Consolas,monospace;white-space:pre-wrap}</style></head>"
+        f"<body>{body}</body></html>\n"
+    )
+
+
 def html_to_pdf(html, out_path):
     """Convert an HTML string to a PDF file using xhtml2pdf."""
     from xhtml2pdf import pisa

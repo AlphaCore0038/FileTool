@@ -45,9 +45,11 @@ VALID_TARGETS = {
 
 HANDLERS = {}
 
-from . import images, pdf, spreadsheet, text_md_html  # noqa: E402
+from . import docx, images, pdf, pptx, spreadsheet, text_md_html  # noqa: E402
 
 HANDLERS.update(images.HANDLERS)
 HANDLERS.update(spreadsheet.HANDLERS)
 HANDLERS.update(text_md_html.HANDLERS)
 HANDLERS.update(pdf.HANDLERS)
+HANDLERS.update(docx.HANDLERS)
+HANDLERS.update(pptx.HANDLERS)
