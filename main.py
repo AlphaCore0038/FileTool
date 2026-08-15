@@ -56,8 +56,10 @@ class Toaster:
         win.configure(bg=bg)
         tk.Label(win, text=message, bg=bg, fg="#ffffff", font=FONT, padx=16, pady=10).pack()
         win.update_idletasks()
-        x = win.winfo_screenwidth() - win.winfo_width() - 24
-        y = win.winfo_screenheight() - win.winfo_height() - 60
+        x = self.root.winfo_rootx() + self.root.winfo_width() - win.winfo_width() - 16
+        y = self.root.winfo_rooty() + self.root.winfo_height() - win.winfo_height() - 16
+        x = min(max(x, 8), win.winfo_screenwidth() - win.winfo_width() - 8)
+        y = min(max(y, 8), win.winfo_screenheight() - win.winfo_height() - 8)
         win.geometry(f"+{x}+{y}")
         win.attributes("-alpha", 0.0)
         self.window = win
