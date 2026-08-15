@@ -110,6 +110,15 @@ class App(tk.Tk):
         )
         self.style.map("TCombobox", fieldbackground=[("readonly", BUTTON)])
 
+        self.style.configure(
+            "Treeview",
+            background=BG, fieldbackground=BG, foreground=TEXT,
+            bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER,
+            rowheight=24, relief="flat",
+        )
+        self.style.configure("Treeview.Heading", background=BUTTON, foreground=TEXT, relief="flat")
+        self.style.map("Treeview", background=[("selected", ACCENT)], foreground=[("selected", "#ffffff")])
+
         self.selected = None
         self.merge_files = []
         self.last_output = None
@@ -163,6 +172,16 @@ class App(tk.Tk):
             cursor="hand2", bd=0, **kw,
         )
 
+    def _update_table(self, fmt=None):
+        self.table.delete(*self.table.get_children())
+        if fmt:
+            self.table.insert("", "end", values=(fmt, ", ".join(VALID_TARGETS[fmt])))
+            self.table.configure(height=1)
+        else:
+            for src, targets in VALID_TARGETS.items():
+                self.table.insert("", "end", values=(src, ", ".join(targets)))
+            self.table.configure(height=len(VALID_TARGETS))
+
     def _open_output(self):
         target = self.last_output
         if target is None and self.selected:
@@ -203,7 +222,15 @@ class App(tk.Tk):
         self.to_combo.grid(row=0, column=3, sticky="w", padx=(8, 0))
 
         self.convert_btn = self._btn(panel, "CONVERT", self._convert, accent=True, padx=28, pady=10)
-        self.convert_btn.pack(pady=20)
+        self.convert_btn.pack(pady=(0, 16))
+
+        self.table = ttk.Treeview(panel, columns=("from", "to"), show="headings", height=1)
+        self.table.heading("from", text="From")
+        self.table.heading("to", text="Can convert to")
+        self.table.column("from", width=80, stretch=False, anchor="w")
+        self.table.column("to", stretch=True, anchor="w")
+        self.table.pack(fill="x", padx=24)
+        self._update_table(None)
 
         footer = tk.Frame(panel, bg=PANEL)
         footer.pack(side="bottom", fill="x", padx=24, pady=10)
@@ -343,6 +370,7 @@ class App(tk.Tk):
         self.from_var.set(fmt)
         self.to_combo["values"] = VALID_TARGETS[fmt]
         self.to_var.set(VALID_TARGETS[fmt][0])
+        self._update_table(fmt)
 
     def _convert(self):
         src = self.selected
