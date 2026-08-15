@@ -35,6 +35,61 @@ FILE_TYPES = [
     ("All files", "*.*"),
 ]
 
+TOAST = {
+    "success": "#1b5e4a",
+    "error": "#8b2f2f",
+    "warn": "#7a5c2e",
+}
+
+
+class Toaster:
+    def __init__(self, root):
+        self.root = root
+        self.window = None
+
+    def show(self, message, kind="success", duration=2500):
+        self._destroy()
+        win = tk.Toplevel(self.root)
+        win.overrideredirect(True)
+        win.attributes("-topmost", True)
+        bg = TOAST[kind]
+        win.configure(bg=bg)
+        tk.Label(win, text=message, bg=bg, fg="#ffffff", font=FONT, padx=16, pady=10).pack()
+        win.update_idletasks()
+        x = win.winfo_screenwidth() - win.winfo_width() - 24
+        y = win.winfo_screenheight() - win.winfo_height() - 60
+        win.geometry(f"+{x}+{y}")
+        win.attributes("-alpha", 0.0)
+        self.window = win
+        self._fade_to(1.0, lambda: self.root.after(duration, self._close))
+
+    def _fade_to(self, target, done):
+        if self.window is None:
+            return
+        try:
+            current = self.window.attributes("-alpha")
+        except tk.TclError:
+            return
+        if abs(current - target) < 0.01:
+            done()
+            return
+        step = 0.1 if target > current else -0.1
+        self.window.attributes("-alpha", current + step)
+        self.root.after(20, lambda: self._fade_to(target, done))
+
+    def _close(self):
+        if self.window is None:
+            return
+        self._fade_to(0.0, self._destroy)
+
+    def _destroy(self):
+        if self.window is not None:
+            try:
+                self.window.destroy()
+            except tk.TclError:
+                pass
+            self.window = None
+
 
 class App(tk.Tk):
     def __init__(self):
@@ -56,6 +111,7 @@ class App(tk.Tk):
         self.selected = None
         self.merge_files = []
         self.last_output = None
+        self.toaster = Toaster(self)
 
         self._build_sidebar()
         self._build_panels()
@@ -278,7 +334,7 @@ class App(tk.Tk):
             return
         fmt = detect_format(path)
         if fmt is None:
-            messagebox.showerror("Unsupported file", "This file type is not supported.")
+            self.toaster.show("unsupported file type", "warn")
             return
         self.selected = path
         self.file_label.config(text=f"File: {path}", fg=TEXT)
@@ -291,7 +347,7 @@ class App(tk.Tk):
         fmt = self.from_var.get()
         tgt = self.to_var.get()
         if not src or fmt == "-" or not tgt:
-            messagebox.showwarning("Nothing to convert", "Choose a file first.")
+            self.toaster.show("choose a file first", "warn")
             return
         handler = HANDLERS[(fmt, tgt)]
         self._busy(True)
@@ -305,10 +361,11 @@ class App(tk.Tk):
                     paths = [out]
             out_dir = get_output_dir(src)
             self._set_output(out_dir)
+            self.toaster.show(f"done: {len(paths)} file(s) saved", "success")
         except CancelledError:
             pass
         except Exception as e:
-            messagebox.showerror("Conversion failed", str(e))
+            self.toaster.show(f"conversion failed: {str(e)[:70]}", "error")
         finally:
             self._busy(False)
 
@@ -330,7 +387,7 @@ class App(tk.Tk):
 
     def _merge_go(self):
         if len(self.merge_files) < 2:
-            messagebox.showwarning("Merge", "Add at least two files.")
+            self.toaster.show("add at least two files", "warn")
             return
         pdfs = []
         imgs = []
@@ -341,7 +398,7 @@ class App(tk.Tk):
             elif fmt in IMAGE_FORMATS:
                 imgs.append((p, fmt))
             else:
-                messagebox.showerror("Merge", f"'{Path(p).name}' is not a PDF or an image.")
+                self.toaster.show(f"'{Path(p).name}' is not a PDF or an image", "warn")
                 return
         self._busy(True)
         try:
@@ -354,10 +411,11 @@ class App(tk.Tk):
             out = self._merge_output_name(self.merge_files[0])
             merge_pdfs(merged_parts, out)
             self._set_output(out.parent)
+            self.toaster.show(f"merged {len(merged_parts)} file(s) into {out.name}", "success")
         except CancelledError:
             pass
         except Exception as e:
-            messagebox.showerror("Merge failed", str(e))
+            self.toaster.show(f"merge failed: {str(e)[:70]}", "error")
         finally:
             self._busy(False)
 
@@ -381,13 +439,13 @@ class App(tk.Tk):
             return
         fmt = detect_format(path)
         if fmt != "PDF":
-            messagebox.showerror("Split", "Only PDF files can be split.")
+            self.toaster.show("only PDF files can be split", "warn")
             return
         self.split_file = path
 
     def _split_go(self):
         if not self.split_file:
-            messagebox.showwarning("Split", "Choose a PDF first.")
+            self.toaster.show("choose a PDF first", "warn")
             return
         self._busy(True)
         try:
@@ -406,10 +464,11 @@ class App(tk.Tk):
                     raise ValueError(f"Bad range format: {e}")
                 paths = split_pdf_ranges(self.split_file, ranges)
             self._set_output(get_output_dir(self.split_file))
+            self.toaster.show(f"split into {len(paths)} files", "success")
         except ValueError as e:
-            messagebox.showerror("Split", str(e))
+            self.toaster.show(f"bad range format: {e}", "error")
         except Exception as e:
-            messagebox.showerror("Split failed", str(e))
+            self.toaster.show(f"split failed: {str(e)[:70]}", "error")
         finally:
             self._busy(False)
 
@@ -435,13 +494,13 @@ class App(tk.Tk):
             return
         fmt = detect_format(path)
         if fmt != "PDF" and fmt not in IMAGE_FORMATS:
-            messagebox.showerror("Compress", "Only PDFs and images can be compressed.")
+            self.toaster.show("only PDFs and images can be compressed", "warn")
             return
         self.compress_file = path
 
     def _compress_go(self):
         if not self.compress_file:
-            messagebox.showwarning("Compress", "Choose a file first.")
+            self.toaster.show("choose a file first", "warn")
             return
         fmt = detect_format(self.compress_file)
         quality = self.quality_var.get()
@@ -454,10 +513,11 @@ class App(tk.Tk):
                 out = resolve_output_path(self.compress_file, "JPG", on_conflict=self._ask_conflict)
                 compress_image(self.compress_file, out, quality=quality)
             self._set_output(out.parent)
+            self.toaster.show(f"compressed at quality {quality}", "success")
         except CancelledError:
             pass
         except Exception as e:
-            messagebox.showerror("Compress failed", str(e))
+            self.toaster.show(f"compress failed: {str(e)[:70]}", "error")
         finally:
             self._busy(False)
 
