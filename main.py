@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -56,6 +57,7 @@ class App(tk.Tk):
 
         self.selected = None
         self.merge_files = []
+        self.last_output = None
 
         self._build_sidebar()
         self._build_panels()
@@ -106,6 +108,17 @@ class App(tk.Tk):
             cursor="hand2", bd=0, **kw,
         )
 
+    def _open_output(self):
+        target = self.last_output
+        if target is None and self.selected:
+            target = get_output_dir(self.selected)
+        if target:
+            os.startfile(str(target))
+
+    def _set_output(self, path):
+        self.last_output = Path(path)
+        self.open_btn.config(state="normal")
+
     def _build_convert(self):
         panel = self._panel("Convert Documents")
 
@@ -137,10 +150,14 @@ class App(tk.Tk):
         self.convert_btn = self._btn(panel, "CONVERT", self._convert, accent=True, padx=28, pady=10)
         self.convert_btn.pack(pady=20)
 
+        footer = tk.Frame(panel, bg=PANEL)
+        footer.pack(side="bottom", fill="x", padx=24, pady=10)
         tk.Label(
-            panel, text="Output is saved in an 'output' folder next to the source file.",
+            footer, text="Output is saved in an 'output' folder next to the source file.",
             bg=PANEL, fg=MUTED, font=("Segoe UI", 9),
-        ).pack(side="bottom", pady=10)
+        ).pack(side="left")
+        self.open_btn = self._btn(footer, "Open output folder", self._open_output, state="disabled", padx=12, pady=4)
+        self.open_btn.pack(side="right")
 
         return panel
 
@@ -300,6 +317,7 @@ class App(tk.Tk):
                 if paths is None:
                     paths = [out]
             out_dir = get_output_dir(src)
+            self._set_output(out_dir)
             self._status(f"done: {len(paths)} file(s) in {out_dir}", OK)
         except CancelledError:
             self._status("cancelled")
@@ -350,6 +368,7 @@ class App(tk.Tk):
                 merged_parts.append(str(tmp_pdf))
             out = self._merge_output_name(self.merge_files[0])
             merge_pdfs(merged_parts, out)
+            self._set_output(out.parent)
             self._status(f"merged {len(merged_parts)} file(s) into {out}", OK)
         except CancelledError:
             self._status("cancelled")
@@ -404,6 +423,7 @@ class App(tk.Tk):
                 except ValueError as e:
                     raise ValueError(f"Bad range format: {e}")
                 paths = split_pdf_ranges(self.split_file, ranges)
+            self._set_output(get_output_dir(self.split_file))
             self._status(f"split into {len(paths)} file(s)", OK)
         except ValueError as e:
             messagebox.showerror("Split", str(e))
@@ -454,6 +474,7 @@ class App(tk.Tk):
             else:
                 out = resolve_output_path(self.compress_file, "JPG", on_conflict=self._ask_conflict)
                 compress_image(self.compress_file, out, quality=quality)
+            self._set_output(out.parent)
             self._status(f"compressed at quality {quality} → {out}", OK)
         except CancelledError:
             self._status("cancelled")
